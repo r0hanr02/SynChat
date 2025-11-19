@@ -3,32 +3,33 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
-    email:{
-        type:String,
-        required:true,
-        unique:true,
-        trim:true,
-        lowercase:true,
-        minlength:[6,"Email must be at least 6 characters long"],
-        maxlength:[50,"Email must be at most 50 characters long"],
-    },
-    password:{
-        type:String,
-        select:false,
-    }
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+    minlength: [6, "Email must be at least 6 characters long"],
+    maxlength: [50, "Email must be at most 50 characters long"],
+  },
+  password: {
+    type: String,
+    select: false,
+  },
+});
+userSchema.statics.hashPassword = async function (password) {
+  return await bcrypt.hash(password, 10);
+};
 
-})
-userSchema.statics.hashPassword = async function(password){
-    return await bcrypt.hash(password,10);
-}
+userSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
 
-userSchema.methods.comparePassword = async function(password){
-    return await bcrypt.compare(password,this.password);
-}
+userSchema.methods.generateToken = function () {
+  return jwt.sign({ email: this.email }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
+};
 
-userSchema.methods.generateToken = function(){
-    return jwt.sign({email:this.email},process.env.JWT_SECRET,{expiresIn:"1h"});
-}
-
-const userModel = mongoose.model("User",userSchema);
+const userModel = mongoose.model("user", userSchema);
 export default userModel;

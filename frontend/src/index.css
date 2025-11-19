@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+.message-box {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE + Edge Legacy */
+}
+
+.message-box::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge (Chromium) */
+}
+.message-box {
+  scroll-behavior: smooth;
+}
