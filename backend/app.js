@@ -5,6 +5,7 @@ import connectDB from "./db/db.js";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/userRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 connectDB();
@@ -16,6 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use("/api", userRouter);
 app.use("/projects", projectRoutes);
+app.use("/ai", aiRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).send("Hello World");

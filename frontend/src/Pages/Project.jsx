@@ -1,11 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TiGroupOutline } from "react-icons/ti";
-import { IoSend, IoCloseOutline, IoAddCircle } from "react-icons/io5";
+import {
+  IoSend,
+  IoCloseOutline,
+  IoAddCircle,
+  IoChevronForwardOutline,
+} from "react-icons/io5";
 import { FaRegUserCircle } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import axios from "../config/axios";
 import { initializeSocket, sendMessage } from "../config/socket";
 import { useUser } from "../context/userContext";
+import Markdown from "markdown-to-jsx";
+
+const MarkdownParagraph = ({ children, ...props }) => (
+  <p
+    {...props}
+    className="whitespace-pre-wrap wrap-break-word text-inherit leading-relaxed"
+  >
+    {children}
+  </p>
+);
+
+const MarkdownListItem = ({ children, ...props }) => (
+  <li
+    {...props}
+    className="list-inside text-inherit whitespace-pre-wrap wrap-break-word leading-relaxed"
+  >
+    {children}
+  </li>
+);
+
+const markdownOptions = {
+  forceBlock: true,
+  overrides: {
+    p: { component: MarkdownParagraph },
+    li: { component: MarkdownListItem },
+  },
+};
 
 const Project = () => {
   const location = useLocation();
@@ -19,6 +51,7 @@ const Project = () => {
 
   // ----------- UI STATES -------------
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [isConversationCollapsed, setIsConversationCollapsed] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState([]);
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,7 +86,7 @@ const Project = () => {
         setUsers(res.data.users);
       })
       .catch((err) => console.log(err));
-  }, []);
+  }, [projectId]);
 
   // ----------- SOCKET SETUP (listen / cleanup) -------------
   useEffect(() => {
@@ -71,7 +104,7 @@ const Project = () => {
     socket.on("project-message", onProjectMessage);
 
     // helpful debug
-    socket.on("connect", () => console.log("socket connected:", socket.id));
+    // socket.on("connect", () => console.log("socket connected:", socket.id));
     socket.on("connect_error", (err) =>
       console.log("socket connect_error:", err.message)
     );
@@ -138,105 +171,154 @@ const Project = () => {
 
   // ----------- UI -------------
   return (
-    <main className="h-screen w-screen flex bg-gray-900 text-gray-100">
-      <section className="left relative flex flex-col h-full min-w-80 bg-gray-900/80 border-r border-gray-800/80 backdrop-blur-sm">
-        <header className="flex justify-between items-center p-4 w-full bg-gray-900/70 border-b border-gray-800">
-          <button
-            className="flex items-center gap-2 rounded-lg bg-blue-600/10 px-3 py-2 text-blue-300 hover:text-white hover:bg-blue-600/30 transition-colors"
-            onClick={() => setIsModalOpen((prev) => !prev)}
-          >
-            <IoAddCircle size={22} />
-            <p className="text-sm font-semibold">Add Collaborator</p>
-          </button>
-
-          <button
-            type="button"
-            className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-            onClick={() => setIsSidePanelOpen((prev) => !prev)}
-          >
-            <TiGroupOutline size={22} />
-          </button>
-        </header>
-
-        {/* CHAT AREA */}
-        <div className="conversation-area flex flex-col grow gap-2 bg-gray-900 px-4 py-3 overflow-y-auto">
-          <div
-            ref={messageBoxRef}
-            className="message-box flex flex-col grow overflow-y-auto gap-3 pr-2"
-          >
-            {messages.length === 0 && (
-              <>
-                <div className="incoming message max-w-xs md:max-w-md lg:max-w-lg flex flex-col flex-wrap p-4 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg shadow-black/40">
-                  <small className="opacity-70 text-xs mb-1 text-gray-300">
-                    example@gmail.com
-                  </small>
-                  <p className="text-sm text-gray-100">
-                    Lorem ipsum dolor sit amet
-                  </p>
-                </div>
-
-                <div className="self-end outgoing message max-w-xs md:max-w-md lg:max-w-lg flex flex-col flex-wrap p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30">
-                  <small className="opacity-80 text-xs mb-1 text-white text-right">
-                    example@gmail.com
-                  </small>
-                  <p className="text-sm text-white text-right">
-                    Lorem ipsum dolor sit amet
-                  </p>
-                </div>
-              </>
-            )}
-
-            {messages.map((m, index) => {
-              const mine = m.sender === user.email;
-              return (
-                <div
-                  key={index}
-                  className={`message max-w-xs md:max-w-md lg:max-w-lg flex flex-col flex-wrap p-4 border border-gray-700 rounded-2xl shadow-lg ${
-                    mine
-                      ? "self-end bg-blue-600 shadow-blue-500/30"
-                      : "bg-gray-800 shadow-black/40"
-                  }`}
-                >
-                  <small
-                    className={`opacity-70 text-xs mb-1 ${
-                      mine ? "text-white text-right" : "text-gray-300"
-                    }`}
-                  >
-                    {m.sender}
-                  </small>
-                  <p
-                    className={`text-sm ${
-                      mine ? "text-white text-right" : "text-gray-100"
-                    }`}
-                  >
-                    {m.message}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* INPUT FIELD */}
-          <div className="inputField w-full flex items-center gap-3 p-4 border-t border-gray-800 bg-gray-900/70 backdrop-blur">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter Message"
-              className="p-3 px-4 w-full bg-gray-800/70 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") send();
-              }}
-            />
-
+    <main className="h-screen w-screen flex bg-gray-950 text-gray-100">
+      <section
+        className={`left relative flex flex-col h-full bg-gray-900/90 border-r border-gray-800/80 backdrop-blur transition-all duration-300 ${
+          isConversationCollapsed
+            ? "w-14 min-w-14 basis-auto"
+            : "min-w-[18rem] basis-3/5 max-w-[50%]"
+        }`}
+      >
+        {isConversationCollapsed ? (
+          <div className="flex flex-col items-center justify-between h-full py-6">
             <button
-              onClick={send}
-              className="flex items-center justify-center bg-blue-600/90 hover:bg-blue-500 text-white font-semibold px-5 py-3 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+              type="button"
+              className="p-2 rounded-full border border-gray-800 text-gray-300 hover:text-white hover:border-blue-500 transition-colors"
+              onClick={() => setIsConversationCollapsed(false)}
             >
-              <IoSend size={18} />
+              <IoChevronForwardOutline className="rotate-180" size={20} />
             </button>
+            <div className="flex flex-col items-center gap-5">
+              <button
+                className="flex gap-2 rounded-lg bg-blue-600/10 px-3 py-2 text-blue-300 hover:text-white hover:bg-blue-600/30 transition-colors"
+                onClick={() => setIsModalOpen((prev) => !prev)}
+              >
+                <IoAddCircle size={22} />
+              </button>
+              <button
+                type="button"
+                className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                onClick={() => setIsSidePanelOpen((prev) => !prev)}
+              >
+                <TiGroupOutline size={22} />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <header className="flex justify-between items-center gap-3 p-4 w-full bg-gray-900/80 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <button
+                  className="flex items-center gap-2 rounded-lg bg-blue-600/10 px-3 py-2 text-blue-300 hover:text-white hover:bg-blue-600/30 transition-colors"
+                  onClick={() => setIsModalOpen((prev) => !prev)}
+                >
+                  <IoAddCircle size={22} />
+                  <p className="text-sm font-semibold">Add Collaborator</p>
+                </button>
+                <button
+                  type="button"
+                  className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                  onClick={() => setIsSidePanelOpen((prev) => !prev)}
+                >
+                  <TiGroupOutline size={22} />
+                </button>
+              </div>
+              <button
+                type="button"
+                className="p-2 rounded-full border border-gray-800/70 text-gray-300 hover:text-white hover:border-blue-500 transition-all"
+                onClick={() => setIsConversationCollapsed(true)}
+                aria-label="Collapse conversation"
+              >
+                <IoChevronForwardOutline size={18} />
+              </button>
+            </header>
+
+            {/* CHAT AREA */}
+            <div className="conversation-area flex flex-col grow bg-gray-900 px-4 py-3 gap-3 overflow-hidden">
+              <div
+                ref={messageBoxRef}
+                className="message-box flex flex-col grow overflow-y-auto gap-3 pr-2 min-h-0"
+              >
+                {messages.length === 0 && (
+                  <>
+                    <div className="incoming message w-full max-w-[80%] h-2 flex flex-col p-4 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg shadow-black/40 wrap-break-word">
+                      <small className="opacity-70 text-xs mb-1 text-gray-300">
+                        example@gmail.com
+                      </small>
+                      <p className="text-sm text-gray-100 whitespace-pre-wrap wrap-break-word leading-relaxed overflow-y-scroll">
+                        Lorem ipsum dolor sit amet
+                      </p>
+                    </div>
+
+                    <div className="self-end outgoing message w-full max-w-[80%] flex flex-col p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30 wrap-break-word">
+                      <small className="opacity-80 text-xs mb-1 text-white text-right">
+                        example@gmail.com
+                      </small>
+                      <p className="text-sm text-white text-right whitespace-pre-wrap wrap-break-word leading-relaxed">
+                        Lorem ipsum dolor sit amet
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {messages.map((m, index) => {
+                  const mine = m.sender === user.email;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`message w-full max-w-[80%] flex flex-col p-4 border border-gray-800/70 rounded-2xl shadow-lg wrap-break-word ${
+                        mine
+                          ? "self-end bg-blue-600 shadow-blue-500/30"
+                          : "bg-gray-800 shadow-black/40"
+                      }`}
+                    >
+                      <small
+                        className={`opacity-70 text-xs mb-1 ${
+                          mine ? "text-white text-right" : "text-gray-300"
+                        }`}
+                      >
+                        {m.sender}
+                      </small>
+                      <div
+                        className={`text-sm whitespace-pre-wrap wrap-break-word leading-relaxed ${
+                          mine
+                            ? "text-white text-right"
+                            : "text-gray-100 text-left"
+                        }`}
+                      >
+                        <Markdown options={markdownOptions}>
+                          {m.message}
+                        </Markdown>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* INPUT FIELD */}
+              <div className="inputField w-full flex items-center gap-3 p-4 border-t border-gray-800 bg-gray-900/80 backdrop-blur">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Enter Message"
+                  className="p-3 px-4 w-full bg-gray-800/70 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") send();
+                  }}
+                />
+
+                <button
+                  onClick={send}
+                  className="flex items-center justify-center bg-blue-600/90 hover:bg-blue-500 text-white font-semibold px-5 py-3 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                >
+                  <IoSend size={18} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* SIDE PANEL */}
         <div
@@ -313,7 +395,7 @@ const Project = () => {
                     key={u._id}
                     onClick={() => handleClick(u._id)}
                     className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                      selectedUserId.includes(u._1d)
+                      selectedUserId.includes(u._id)
                         ? "border-blue-500 bg-blue-600/20 text-white shadow-md shadow-blue-500/20"
                         : "border-gray-800 hover:border-gray-700 hover:bg-gray-800/50 text-gray-200"
                     }`}
@@ -353,7 +435,9 @@ const Project = () => {
       ) : null}
 
       {/* RIGHT PANEL */}
-      <section className="right flex-1 bg-linear-to-br from-gray-900 to-gray-950 flex items-center justify-center text-gray-400">
+      <section
+        className={`right w-full bg-linear-to-br from-gray-900 to-gray-950 flex items-center justify-center text-gray-400`}
+      >
         <p className="text-sm tracking-wide uppercase">
           Coming soon: collaborative canvas & project details.
         </p>
