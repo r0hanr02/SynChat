@@ -59,7 +59,7 @@ io.on("connection", (socket) => {
       const result = await generateResponse(prompt);
       io.to(socket.roomId).emit("project-message", {
         message: result,
-        sender: "AI",
+        sender: "Ai",
       });
 
       return;

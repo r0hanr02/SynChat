@@ -9,14 +9,24 @@ import {
 import { FaRegUserCircle } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import axios from "../config/axios";
-import { initializeSocket, sendMessage } from "../config/socket";
+import {
+  initializeSocket,
+  receiveMessage,
+  sendMessage,
+} from "../config/socket";
 import { useUser } from "../context/userContext";
 import Markdown from "markdown-to-jsx";
 
 const MarkdownParagraph = ({ children, ...props }) => (
   <p
     {...props}
-    className="whitespace-pre-wrap wrap-break-word text-inherit leading-relaxed"
+    className="
+      whitespace-pre-wrap 
+      wrap-break-word 
+      leading-relaxed
+      max-h-64 
+      overflow-y-auto
+    "
   >
     {children}
   </p>
@@ -25,7 +35,14 @@ const MarkdownParagraph = ({ children, ...props }) => (
 const MarkdownListItem = ({ children, ...props }) => (
   <li
     {...props}
-    className="list-inside text-inherit whitespace-pre-wrap wrap-break-word leading-relaxed"
+    className="
+      list-inside 
+      whitespace-pre-wrap 
+      wrap-break-word 
+      leading-relaxed
+      max-h-64 
+      overflow-y-auto
+    "
   >
     {children}
   </li>
@@ -40,6 +57,10 @@ const markdownOptions = {
 };
 
 const Project = () => {
+  const [fileTree, setFileTree] = useState({});
+  const [currentFile, setCurrentFile] = useState(null);
+  const [openFiles, setOpenFiles] = useState([]);
+
   const location = useLocation();
   const { user } = useUser();
 
@@ -51,15 +72,23 @@ const Project = () => {
 
   // ----------- UI STATES -------------
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
-  const [isConversationCollapsed, setIsConversationCollapsed] = useState(false);
+  const [isConversationCollapsed, setIsConversationCollapsed] =
+    useState(false);
   const [selectedUserId, setSelectedUserId] = useState([]);
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
 
-  // ref to the message container for auto-scroll
   const messageBoxRef = useRef(null);
+
+  function tryParseJSON(str) {
+    try {
+      return JSON.parse(str);
+    } catch (error) {
+      return null;
+    }
+  }
 
   // ----------- FETCH PROJECT IF NOT FROM ROUTER STATE -------------
   useEffect(() => {
@@ -75,55 +104,60 @@ const Project = () => {
   useEffect(() => {
     axios
       .get(`/projects/get-project/${projectId}`)
-      .then((res) => {
-        setProject(res.data.project);
-      })
+      .then((res) => setProject(res.data.project))
       .catch((err) => console.log(err));
 
     axios
       .get("/api/all")
-      .then((res) => {
-        setUsers(res.data.users);
-      })
+      .then((res) => setUsers(res.data.users))
       .catch((err) => console.log(err));
   }, [projectId]);
+
+  function mergeAiFileTree(aiFiles) {
+    const converted = {};
+    for (const [filename, content] of Object.entries(aiFiles)) {
+      converted[filename] = { content };
+    }
+    return converted;
+  }
 
   // ----------- SOCKET SETUP (listen / cleanup) -------------
   useEffect(() => {
     if (!projectId) return;
 
-    const socket = initializeSocket(projectId);
+    initializeSocket(projectId);
 
-    // handler for incoming messages
-    const onProjectMessage = (data) => {
-      // data expected shape: { message: "...", sender: "userId" }
-      setMessages((prev) => [...prev, data]);
-    };
+    receiveMessage("project-message", (data) => {
+      const parsed = tryParseJSON(data.message);
 
-    // attach listener
-    socket.on("project-message", onProjectMessage);
+      if (parsed) {
+        console.log("AI JSON", parsed);
 
-    // helpful debug
-    // socket.on("connect", () => console.log("socket connected:", socket.id));
-    socket.on("connect_error", (err) =>
-      console.log("socket connect_error:", err.message)
-    );
+        if (parsed.filetree) {
+          const converted = mergeAiFileTree(parsed.filetree);
+          setFileTree((prev) => ({
+            ...prev,
+            ...converted,
+          }));
+        }
 
-    // cleanup on unmount (or if projectId changes)
-    return () => {
-      socket.off("project-message", onProjectMessage);
-      socket.off("connect");
-      socket.off("connect_error");
-      // intentionally do not disconnect socket here to allow reuse across components,
-      // unless you want to forcefully disconnect: socket.disconnect();
-    };
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: data.sender,
+            message: parsed.text || "",
+          },
+        ]);
+      } else {
+        setMessages((prev) => [...prev, data]);
+      }
+    });
   }, [projectId]);
 
   // ----------- auto-scroll to bottom when messages change -------------
   useEffect(() => {
     const box = messageBoxRef.current;
     if (box) {
-      // scroll to bottom smoothly
       box.scrollTop = box.scrollHeight;
     }
   }, [messages]);
@@ -157,15 +191,11 @@ const Project = () => {
 
     const payload = {
       message: message.trim(),
-      sender: user.email, // send only id
+      sender: user.email,
     };
 
-    // optimistic update (show message immediately)
     setMessages((prev) => [...prev, payload]);
-
-    // emit to server
     sendMessage("project-message", payload);
-
     setMessage("");
   };
 
@@ -176,7 +206,7 @@ const Project = () => {
         className={`left relative flex flex-col h-full bg-gray-900/90 border-r border-gray-800/80 backdrop-blur transition-all duration-300 ${
           isConversationCollapsed
             ? "w-14 min-w-14 basis-auto"
-            : "min-w-[18rem] basis-3/5 max-w-[50%]"
+            : "min-w-[18rem] basis-3/5 max-w-[40%]"
         }`}
       >
         {isConversationCollapsed ? (
@@ -186,8 +216,9 @@ const Project = () => {
               className="p-2 rounded-full border border-gray-800 text-gray-300 hover:text-white hover:border-blue-500 transition-colors"
               onClick={() => setIsConversationCollapsed(false)}
             >
-              <IoChevronForwardOutline className="rotate-180" size={20} />
+              <IoChevronForwardOutline size={20} />
             </button>
+
             <div className="flex flex-col items-center gap-5">
               <button
                 className="flex gap-2 rounded-lg bg-blue-600/10 px-3 py-2 text-blue-300 hover:text-white hover:bg-blue-600/30 transition-colors"
@@ -195,6 +226,7 @@ const Project = () => {
               >
                 <IoAddCircle size={22} />
               </button>
+
               <button
                 type="button"
                 className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -215,6 +247,7 @@ const Project = () => {
                   <IoAddCircle size={22} />
                   <p className="text-sm font-semibold">Add Collaborator</p>
                 </button>
+
                 <button
                   type="button"
                   className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -223,13 +256,14 @@ const Project = () => {
                   <TiGroupOutline size={22} />
                 </button>
               </div>
+
               <button
                 type="button"
                 className="p-2 rounded-full border border-gray-800/70 text-gray-300 hover:text-white hover:border-blue-500 transition-all"
                 onClick={() => setIsConversationCollapsed(true)}
                 aria-label="Collapse conversation"
               >
-                <IoChevronForwardOutline size={18} />
+                <IoChevronForwardOutline className="rotate-180" size={18} />
               </button>
             </header>
 
@@ -241,11 +275,11 @@ const Project = () => {
               >
                 {messages.length === 0 && (
                   <>
-                    <div className="incoming message w-full max-w-[80%] h-2 flex flex-col p-4 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg shadow-black/40 wrap-break-word">
+                    <div className="incoming message w-full max-w-[80%] flex flex-col p-4 bg-gray-800 border border-gray-700 rounded-2xl shadow-lg shadow-black/40 wrap-break-word">
                       <small className="opacity-70 text-xs mb-1 text-gray-300">
                         example@gmail.com
                       </small>
-                      <p className="text-sm text-gray-100 whitespace-pre-wrap wrap-break-word leading-relaxed overflow-y-scroll">
+                      <p className="text-sm text-gray-100 whitespace-pre-wrap wrap-break-word leading-relaxed">
                         Lorem ipsum dolor sit amet
                       </p>
                     </div>
@@ -267,29 +301,34 @@ const Project = () => {
                   return (
                     <div
                       key={index}
-                      className={`message w-full max-w-[80%] flex flex-col p-4 border border-gray-800/70 rounded-2xl shadow-lg wrap-break-word ${
-                        mine
-                          ? "self-end bg-blue-600 shadow-blue-500/30"
-                          : "bg-gray-800 shadow-black/40"
+                      className={`w-full flex ${
+                        mine ? "justify-end" : "justify-start"
                       }`}
                     >
-                      <small
-                        className={`opacity-70 text-xs mb-1 ${
-                          mine ? "text-white text-right" : "text-gray-300"
-                        }`}
-                      >
-                        {m.sender}
-                      </small>
                       <div
-                        className={`text-sm whitespace-pre-wrap wrap-break-word leading-relaxed ${
+                        className={`max-w-[80%] border border-gray-700 px-4 py-3 rounded-lg wrap-break-word shadow-md ${
                           mine
-                            ? "text-white text-right"
-                            : "text-gray-100 text-left"
+                            ? "bg-blue-600 border-blue-500/40"
+                            : "bg-gray-800/80"
                         }`}
                       >
-                        <Markdown options={markdownOptions}>
-                          {m.message}
-                        </Markdown>
+                        <div
+                          className={`text-xs font-medium mb-1 opacity-70 ${
+                            mine ? "text-right text-4xl" : "text-gray-300"
+                          }`}
+                        >
+                          {m.sender}
+                        </div>
+
+                        <div
+                          className={`text-sm leading-relaxed whitespace-pre-wrap wrap-break-word prose prose-invert prose-sm max-h-96 overflow-y-auto overflow-x-hidden discord-markdown ${
+                            mine ? "text-white" : "text-gray-100"
+                          }`}
+                        >
+                          <Markdown options={markdownOptions}>
+                            {m.message || m.text}
+                          </Markdown>
+                        </div>
                       </div>
                     </div>
                   );
@@ -311,7 +350,7 @@ const Project = () => {
 
                 <button
                   onClick={send}
-                  className="flex items-center justify-center bg-blue-600/90 hover:bg-blue-500 text-white font-semibold px-5 py-3 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                  className="flex items-center justify-center bg-blue-600/90 hover:bg-blue-500 text-white font-semibold px-5 py-3 rounded-xl transition-colors duration-200"
                 >
                   <IoSend size={18} />
                 </button>
@@ -375,7 +414,10 @@ const Project = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Select User</h2>
+              <h2 className="text-xl font-semibold text-white">
+                Select User
+              </h2>
+
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
@@ -410,7 +452,9 @@ const Project = () => {
                       <FaRegUserCircle />
                     </div>
 
-                    <p className="text-sm font-medium flex-1">{u.email}</p>
+                    <p className="text-sm font-medium flex-1">
+                      {u.email}
+                    </p>
 
                     {selectedUserId.includes(u._id) && (
                       <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
@@ -427,20 +471,119 @@ const Project = () => {
               disabled={selectedUserId.length === 0}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition"
             >
-              Add {selectedUserId.length > 0 ? `${selectedUserId.length} ` : ""}
-              Collaborator{selectedUserId.length !== 1 ? "s" : ""}
+              Add{" "}
+              {selectedUserId.length > 0
+                ? `${selectedUserId.length} `
+                : ""}
+              Collaborator
+              {selectedUserId.length !== 1 ? "s" : ""}
             </button>
           </div>
         </div>
       ) : null}
 
       {/* RIGHT PANEL */}
-      <section
-        className={`right w-full bg-linear-to-br from-gray-900 to-gray-950 flex items-center justify-center text-gray-400`}
-      >
-        <p className="text-sm tracking-wide uppercase">
-          Coming soon: collaborative canvas & project details.
-        </p>
+      <section className="right w-full bg-linear-to-br from-gray-900 to-gray-950 flex">
+        {/* FILE EXPLORER */}
+        <div className="explorer h-full max-w-64 min-w-52 py-3 border-r border-gray-800 bg-gray-900/40">
+          <div className="file-tree w-full flex flex-col gap-1">
+            {Object.keys(fileTree).map((file, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setCurrentFile(file);
+                  setOpenFiles([...new Set([...openFiles, file])]);
+                }}
+                className="
+                  tree-element 
+                  p-3 px-4 
+                  flex items-center
+                  bg-slate-800 
+                  hover:bg-slate-700 
+                  transition-colors
+                  text-left
+                  w-full
+                  border-b border-gray-700/40
+                "
+              >
+                <p className="cursor-pointer font-bold text-sm text-gray-200 truncate w-full">
+                  {file}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* CODE VIEWER */}
+        <div className="codeEditor flex-1 p-4">
+          {currentFile ? (
+            <div className="w-full h-full flex flex-col bg-gray-900/40 border border-gray-800 rounded-lg overflow-hidden">
+              {/* Header */}
+              <div className="code-editor-header flex justify-between items-center px-4 py-2 bg-gray-800/80 border-b border-gray-700">
+                <div className="top p-2 flex gap-2 overflow-x-auto whitespace-nowrap">
+                  {openFiles.map((file, index) => (
+                    <button
+                      key={index}
+                      className="
+                        open-file 
+                        px-3 py-1 
+                        bg-gray-900 
+                        border border-gray-700 
+                        rounded-md
+                        text-gray-300 
+                        hover:bg-gray-800 hover:text-white 
+                        transition
+                      "
+                      onClick={() => setCurrentFile(file)}
+                    >
+                      {file}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setCurrentFile(null);
+                    setOpenFiles([]);
+                  }}
+                  className="
+                    text-gray-300 hover:text-white 
+                    p-1 rounded-md
+                    hover:bg-gray-700
+                    transition
+                  "
+                >
+                  <IoCloseOutline size={20} />
+                </button>
+              </div>
+
+              {/* Code Display */}
+              <textarea
+                className="
+                  flex-1 
+                  overflow-auto 
+                  text-green-300 
+                  text-sm 
+                  p-4 
+                  bg-black/30 
+                  font-mono 
+                  outline-none
+                "
+                value={fileTree[currentFile].content}
+                onChange={(e) =>
+                  setFileTree({
+                    ...fileTree,
+                    [currentFile]: { content: e.target.value },
+                  })
+                }
+              ></textarea>
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500">
+              <p className="text-sm">Select a file to preview.</p>
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

@@ -11,3 +11,26 @@
 .message-box {
   scroll-behavior: smooth;
 }
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99); /* gray-600 */
+  border-radius: 9999px;
+}
+
+.discord-markdown pre {
+  background: #1e1f22 !important;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.discord-markdown code {
+  background: #2b2d31;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
