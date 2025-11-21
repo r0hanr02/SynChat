@@ -1,21 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
-import { TiGroupOutline } from "react-icons/ti";
+import React, { useEffect, useRef, useState } from 'react';
+import { TiGroupOutline } from 'react-icons/ti';
 import {
   IoSend,
   IoCloseOutline,
   IoAddCircle,
   IoChevronForwardOutline,
-} from "react-icons/io5";
-import { FaRegUserCircle } from "react-icons/fa";
-import { useLocation } from "react-router-dom";
-import axios from "../config/axios";
+} from 'react-icons/io5';
+import { FaRegUserCircle } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
+import axios from '../config/axios';
 import {
   initializeSocket,
   receiveMessage,
   sendMessage,
-} from "../config/socket";
-import { useUser } from "../context/userContext";
-import Markdown from "markdown-to-jsx";
+} from '../config/socket';
+import { useUser } from '../context/userContext';
+import Markdown from 'markdown-to-jsx';
 
 const MarkdownParagraph = ({ children, ...props }) => (
   <p
@@ -67,25 +67,30 @@ const Project = () => {
   // ----------- SAFE PROJECT + PROJECT ID HANDLING -------------
   const stateProject = location.state?.project || null;
   const projectId =
-    stateProject?._id || window.location.pathname.split("/").pop();
+    stateProject?._id || window.location.pathname.split('/').pop();
   const [project, setProject] = useState(stateProject);
 
   // ----------- UI STATES -------------
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
-  const [isConversationCollapsed, setIsConversationCollapsed] =
-    useState(false);
+  const [isConversationCollapsed, setIsConversationCollapsed] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState([]);
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
 
   const messageBoxRef = useRef(null);
 
   function tryParseJSON(str) {
+    if (!str) return null;
+    const clean = str
+      .trim()
+      .replace(/^```json/, '')
+      .replace(/^```/, '')
+      .replace(/```$/, '');
     try {
-      return JSON.parse(str);
-    } catch (error) {
+      return JSON.parse(clean);
+    } catch (err) {
       return null;
     }
   }
@@ -108,17 +113,35 @@ const Project = () => {
       .catch((err) => console.log(err));
 
     axios
-      .get("/api/all")
+      .get('/api/all')
       .then((res) => setUsers(res.data.users))
       .catch((err) => console.log(err));
   }, [projectId]);
 
-  function mergeAiFileTree(aiFiles) {
-    const converted = {};
-    for (const [filename, content] of Object.entries(aiFiles)) {
-      converted[filename] = { content };
+  function flattenTree(tree, basePath = '') {
+    let result = {};
+
+    for (const [name, entry] of Object.entries(tree)) {
+      const fullPath = basePath ? `${basePath}/${name}` : name;
+
+      // Directory → go deeper
+      if (entry.directory) {
+        Object.assign(result, flattenTree(entry.directory, fullPath));
+      }
+
+      // File → extract contents
+      if (entry.file) {
+        result[fullPath] = {
+          content: entry.file.contents || '',
+        };
+      }
     }
-    return converted;
+
+    return result;
+  }
+
+  function mergeAiFileTree(aiFiles) {
+    return flattenTree(aiFiles);
   }
 
   // ----------- SOCKET SETUP (listen / cleanup) -------------
@@ -127,14 +150,16 @@ const Project = () => {
 
     initializeSocket(projectId);
 
-    receiveMessage("project-message", (data) => {
-      const parsed = tryParseJSON(data.message);
-
+    receiveMessage('project-message', (data) => {
+      // console.log(data);
+      const parsed = tryParseJSON(data?.message);
       if (parsed) {
-        console.log("AI JSON", parsed);
+        console.log('AI JSON', parsed);
 
-        if (parsed.filetree) {
-          const converted = mergeAiFileTree(parsed.filetree);
+        if (parsed.fileTree || parsed.filetree) {
+          const raw = parsed.fileTree || parsed.filetree;
+          const converted = mergeAiFileTree(raw);
+
           setFileTree((prev) => ({
             ...prev,
             ...converted,
@@ -145,7 +170,7 @@ const Project = () => {
           ...prev,
           {
             sender: data.sender,
-            message: parsed.text || "",
+            message: parsed.text || '',
           },
         ]);
       } else {
@@ -174,7 +199,7 @@ const Project = () => {
   // ----------- ADD COLLABORATOR -------------
   const addCollaborator = () => {
     axios
-      .put("/projects/adduser", {
+      .put('/projects/adduser', {
         projectId: projectId,
         users: selectedUserId,
       })
@@ -195,8 +220,8 @@ const Project = () => {
     };
 
     setMessages((prev) => [...prev, payload]);
-    sendMessage("project-message", payload);
-    setMessage("");
+    sendMessage('project-message', payload);
+    setMessage('');
   };
 
   // ----------- UI -------------
@@ -205,8 +230,8 @@ const Project = () => {
       <section
         className={`left relative flex flex-col h-full bg-gray-900/90 border-r border-gray-800/80 backdrop-blur transition-all duration-300 ${
           isConversationCollapsed
-            ? "w-14 min-w-14 basis-auto"
-            : "min-w-[18rem] basis-3/5 max-w-[40%]"
+            ? 'w-14 min-w-14 basis-auto'
+            : 'min-w-[18rem] basis-3/5 max-w-[40%]'
         }`}
       >
         {isConversationCollapsed ? (
@@ -302,19 +327,19 @@ const Project = () => {
                     <div
                       key={index}
                       className={`w-full flex ${
-                        mine ? "justify-end" : "justify-start"
+                        mine ? 'justify-end' : 'justify-start'
                       }`}
                     >
                       <div
                         className={`max-w-[80%] border border-gray-700 px-4 py-3 rounded-lg wrap-break-word shadow-md ${
                           mine
-                            ? "bg-blue-600 border-blue-500/40"
-                            : "bg-gray-800/80"
+                            ? 'bg-blue-600 border-blue-500/40'
+                            : 'bg-gray-800/80'
                         }`}
                       >
                         <div
                           className={`text-xs font-medium mb-1 opacity-70 ${
-                            mine ? "text-right text-4xl" : "text-gray-300"
+                            mine ? 'text-right text-4xl' : 'text-gray-300'
                           }`}
                         >
                           {m.sender}
@@ -322,7 +347,7 @@ const Project = () => {
 
                         <div
                           className={`text-sm leading-relaxed whitespace-pre-wrap wrap-break-word prose prose-invert prose-sm max-h-96 overflow-y-auto overflow-x-hidden discord-markdown ${
-                            mine ? "text-white" : "text-gray-100"
+                            mine ? 'text-white' : 'text-gray-100'
                           }`}
                         >
                           <Markdown options={markdownOptions}>
@@ -344,7 +369,7 @@ const Project = () => {
                   placeholder="Enter Message"
                   className="p-3 px-4 w-full bg-gray-800/70 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") send();
+                    if (e.key === 'Enter') send();
                   }}
                 />
 
@@ -362,7 +387,7 @@ const Project = () => {
         {/* SIDE PANEL */}
         <div
           className={`slidePanel fixed z-40 w-80 max-w-xs h-full flex flex-col bg-gray-900/95 top-0 left-0 border-r border-gray-800/80 shadow-2xl transition-transform duration-300 ${
-            isSidePanelOpen ? "translate-x-0" : "-translate-x-full"
+            isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <header className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/90">
@@ -414,9 +439,7 @@ const Project = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">
-                Select User
-              </h2>
+              <h2 className="text-xl font-semibold text-white">Select User</h2>
 
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -438,23 +461,21 @@ const Project = () => {
                     onClick={() => handleClick(u._id)}
                     className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                       selectedUserId.includes(u._id)
-                        ? "border-blue-500 bg-blue-600/20 text-white shadow-md shadow-blue-500/20"
-                        : "border-gray-800 hover:border-gray-700 hover:bg-gray-800/50 text-gray-200"
+                        ? 'border-blue-500 bg-blue-600/20 text-white shadow-md shadow-blue-500/20'
+                        : 'border-gray-800 hover:border-gray-700 hover:bg-gray-800/50 text-gray-200'
                     }`}
                   >
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${
                         selectedUserId.includes(u._id)
-                          ? "bg-blue-600/30 text-blue-300"
-                          : "bg-gray-800 text-gray-400"
+                          ? 'bg-blue-600/30 text-blue-300'
+                          : 'bg-gray-800 text-gray-400'
                       }`}
                     >
                       <FaRegUserCircle />
                     </div>
 
-                    <p className="text-sm font-medium flex-1">
-                      {u.email}
-                    </p>
+                    <p className="text-sm font-medium flex-1">{u.email}</p>
 
                     {selectedUserId.includes(u._id) && (
                       <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
@@ -471,12 +492,9 @@ const Project = () => {
               disabled={selectedUserId.length === 0}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition"
             >
-              Add{" "}
-              {selectedUserId.length > 0
-                ? `${selectedUserId.length} `
-                : ""}
+              Add {selectedUserId.length > 0 ? `${selectedUserId.length} ` : ''}
               Collaborator
-              {selectedUserId.length !== 1 ? "s" : ""}
+              {selectedUserId.length !== 1 ? 's' : ''}
             </button>
           </div>
         </div>
@@ -485,7 +503,16 @@ const Project = () => {
       {/* RIGHT PANEL */}
       <section className="right w-full bg-linear-to-br from-gray-900 to-gray-950 flex">
         {/* FILE EXPLORER */}
-        <div className="explorer h-full max-w-64 min-w-52 py-3 border-r border-gray-800 bg-gray-900/40">
+        <div className="explorer h-full w-64 min-w-52 py-3 border-r border-gray-800 bg-gray-900/40">
+          <header className="flex justify-between p-2 pb-4">
+            <p className="font-bold p-2">File Structure</p>
+            <button
+              className="bg-gray-800 p-2 rounded-md hover:bg-slate-700  font-semibold font-mono "
+              onClick={() => setFileTree({})}
+            >
+              Clear
+            </button>
+          </header>
           <div className="file-tree w-full flex flex-col gap-1">
             {Object.keys(fileTree).map((file, index) => (
               <button
@@ -519,8 +546,8 @@ const Project = () => {
           {currentFile ? (
             <div className="w-full h-full flex flex-col bg-gray-900/40 border border-gray-800 rounded-lg overflow-hidden">
               {/* Header */}
-              <div className="code-editor-header flex justify-between items-center px-4 py-2 bg-gray-800/80 border-b border-gray-700">
-                <div className="top p-2 flex gap-2 overflow-x-auto whitespace-nowrap">
+              <div className="code-editor-header w-full flex  justify-between items-center px-4 py-2 bg-gray-800/80 border-b border-gray-700">
+                <div className="top flex  flex-wrap gap-1 overflow-x-auto whitespace-nowrap">
                   {openFiles.map((file, index) => (
                     <button
                       key={index}
@@ -546,7 +573,7 @@ const Project = () => {
                     setCurrentFile(null);
                     setOpenFiles([]);
                   }}
-                  className="
+                  className=" bg-slate-950
                     text-gray-300 hover:text-white 
                     p-1 rounded-md
                     hover:bg-gray-700
