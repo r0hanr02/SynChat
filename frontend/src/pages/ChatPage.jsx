@@ -1,9 +1,21 @@
-import React from 'react'
+import React from "react";
+import { useChat } from "../context/chatProvider";
+import SideDrawer from "../components/customs/SideDrawer";
+import ChatBox from "../components/ChatBox";
+import MyChats from "../components/MyChats";
 
 const ChatPage = () => {
-  return (
-    <div>ChatPage</div>
-  )
-}
+  const { user } = useChat();
 
-export default ChatPage
+  return (
+    <div style={{ width: "100%" }}>
+      {user & <SideDrawer />}
+      <section>
+        {user && <MyChats />}
+        {user && <ChatBox />}
+      </section>
+    </div>
+  );
+};
+
+export default ChatPage;

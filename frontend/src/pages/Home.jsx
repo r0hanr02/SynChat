@@ -2,9 +2,15 @@ import React, { useState } from "react";
 import { Button } from "../components/ui/button";
 import Login from "../auth/Login";
 import Register from "../auth/Register";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const [toggle, setToggle] = useState(true);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("userInfo"));
+    if (user) navigate("/chats");
+  }, [navigate]);
 
   return (
     <section className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-100 via-white to-indigo-50 p-6">
