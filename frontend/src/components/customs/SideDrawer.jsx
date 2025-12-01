@@ -153,48 +153,64 @@ const SideDrawer = () => {
       </div>
       {openSideDrawer && (
         <div
-          className={`bg-gray-800 h-full w-80 shadow-xl border-r z-30 flex flex-col text-white fixed left-0 top-0 transform ease-in-out transition-transform duration-700 p-2
-  ${openSideDrawer ? "translate-x-0" : "-translate-x-full"}`}
+          className={`fixed left-0 top-0 h-full w-80 bg-indigo-100 text-indigo-800 shadow-xl border-r 
+                z-30 flex flex-col transform transition-transform duration-700 ease-in-out p-4
+                ${openSideDrawer ? "translate-x-0" : "-translate-x-full"}`}
         >
-          <div className="flex items-center justify-between p-2">
-            <h4 className="text-xl">Search User</h4>
-            <button onClick={() => setOpenSideDrawer(false)}>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xl font-semibold">Search User</h4>
+            <button
+              onClick={() => setOpenSideDrawer(false)}
+              className="text-indigo-600 hover:text-red-600 transition-colors duration-200"
+            >
               <IoClose size={25} />
             </button>
           </div>
 
-          <hr className="p-2" />
+          <hr className="border-indigo-300 mb-4" />
 
-          <div className="flex gap-2 m-2">
+          {/* Search Input */}
+          <div className="flex gap-2 mb-4">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search By Name or Email"
-              className="w-10/12 bg-gray-500 p-2 rounded-md outline-none"
+              placeholder="Search by name or email"
+              className="flex-1 bg-white text-indigo-800 px-3 py-2 rounded-full 
+                   border border-indigo-300 placeholder-indigo-400 
+                   focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
             <button
               onClick={handleSearch}
-              className="bg-gray-800 px-3 rounded-xl hover:bg-gray-500 duration-150"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium 
+                   hover:bg-indigo-700 transition-colors duration-200"
             >
               GO
             </button>
           </div>
 
-          <p className="text-xl underline px-2">Users</p>
+          {/* Users Section */}
+          <p className="text-lg font-medium underline mb-2">Users</p>
 
-          {loading ? (
-            <ChatLoading />
-          ) : (
-            searchResult?.map((user) => (
-              <UserListItem
-                key={user._id}
-                user={user}
-                handleFunction={() => accessChat(user._id)}
-              />
-            ))
-          )}
-          {loadingChat && <Spinner />}
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {loading ? (
+              <ChatLoading />
+            ) : (
+              searchResult?.map((user) => (
+                <UserListItem
+                  key={user._id}
+                  user={user}
+                  handleFunction={() => accessChat(user._id)}
+                />
+              ))
+            )}
+            {loadingChat && (
+              <div className="flex justify-center py-4">
+                <Spinner />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

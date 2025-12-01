@@ -4,8 +4,8 @@ const UserListItem = ({ user, handleFunction }) => {
   return (
     <div
       onClick={handleFunction}
-      className="flex items-center gap-4 p-3 my-2 rounded-lg border border-gray-800 
-                 bg-gray-700  shadow-sm cursor-pointer hover:bg-gray-900
+      className="flex items-center gap-4 p-3 my-2 rounded-lg border border-indigo-200 
+                 bg-indigo-50 shadow-sm cursor-pointer hover:bg-indigo-100
                  transition-colors duration-300 "
     >
       {/* Avatar */}
@@ -13,12 +13,12 @@ const UserListItem = ({ user, handleFunction }) => {
         <img
           src={user.pic}
           alt="profile"
-          className="w-12 h-12 rounded-full object-cover border border-gray-300"
+          className="w-12 h-12 rounded-full object-cover border border-indigo-300"
         />
       ) : (
         <div
           className="w-12 h-12 rounded-full bg-indigo-600 text-white 
-                        flex items-center justify-center text-lg font-semibold border border-gray-300"
+                        flex items-center justify-center text-lg font-semibold border border-indigo-300"
         >
           {user.name?.charAt(0)?.toUpperCase()}
         </div>
@@ -26,8 +26,8 @@ const UserListItem = ({ user, handleFunction }) => {
 
       {/* User Info */}
       <div className="flex flex-col">
-        <p className="font-bold text-sm">{user.name}</p>
-        <p className="text-gray-300">{user.email}</p>
+        <p className="font-semibold text-indigo-800">{user.name}</p>
+        <p className="text-sm text-indigo-600">{user.email}</p>
       </div>
     </div>
   );

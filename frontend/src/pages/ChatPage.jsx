@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useChat } from "../context/chatProvider";
 import SideDrawer from "../components/customs/SideDrawer";
 import ChatBox from "../components/ChatBox";
@@ -6,6 +6,7 @@ import MyChats from "../components/MyChats";
 
 const ChatPage = () => {
   const { user } = useChat();
+  const [fetchAgain, setFetchAgain] = useState(false);
 
   return (
     <div className="w-full h-screen flex flex-col">
@@ -13,19 +14,15 @@ const ChatPage = () => {
       {user && <SideDrawer />}
 
       {/* Main Chat Section */}
-      <section className="flex flex-1 w-full bg-gray-50">
+      <section className="flex w-full h-screen bg-gray-50">
         {/* Sidebar (MyChats) */}
         {user && (
-          <div className="w-full md:w-1/3 lg:w-1/4 border-r border-gray-200 bg-white shadow-sm">
-            <MyChats />
-          </div>
+          <MyChats fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />
         )}
 
         {/* ChatBox */}
         {user && (
-          <div className="flex-1 bg-white">
-            <ChatBox />
-          </div>
+          <ChatBox fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />
         )}
       </section>
     </div>
