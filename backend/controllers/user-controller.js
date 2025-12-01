@@ -72,8 +72,9 @@ const allUsers = async function (req, res) {
         }
       : {};
 
-    const users = await userModel.find(keyword);
-    // .find({ _id: { $ne: req.user._id } });
+    const users = await userModel
+      .find(keyword)
+      .find({ _id: { $ne: req.user._id } });
     return res.status(200).json({ users });
   } catch (error) {
     return res.status(500).json(error);

@@ -10,6 +10,7 @@ import { showError } from "../../service/toast";
 import axios from "axios";
 import ChatLoading from "../ChatLoading";
 import UserListItem from "../UserAvatar/UserListItem";
+import { Spinner } from "../ui/spinner";
 
 const SideDrawer = () => {
   const [search, setSearch] = useState("");
@@ -17,7 +18,7 @@ const SideDrawer = () => {
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(null);
-  const [openSideDrawer, setOpenSideDrawer] = useState(true);
+  const [openSideDrawer, setOpenSideDrawer] = useState(false);
   const menuRef = useRef(null);
   const { user, setSelectedChat, chats, setChats } = useChat();
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ const SideDrawer = () => {
         `${import.meta.env.VITE_APP_URL}/api/user?search=${search}`,
         config
       );
-      // console.log(data.users);
+      if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
       setSearchResult(data.users);
       setLoading(false);
     } catch (error) {
@@ -193,6 +194,7 @@ const SideDrawer = () => {
               />
             ))
           )}
+          {loadingChat && <Spinner />}
         </div>
       )}
     </>

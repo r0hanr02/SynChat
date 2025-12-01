@@ -47,6 +47,7 @@ const accessChat = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 const fetchChats = async (req, res) => {
   try {
     chatModel
