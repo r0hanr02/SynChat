@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import Login from "../auth/Login";
 import Register from "../auth/Register";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Home = () => {
   const [toggle, setToggle] = useState(true);

@@ -8,11 +8,25 @@ const ChatPage = () => {
   const { user } = useChat();
 
   return (
-    <div style={{ width: "100%" }}>
-      {user & <SideDrawer />}
-      <section>
-        {user && <MyChats />}
-        {user && <ChatBox />}
+    <div className="w-full h-screen flex flex-col">
+      {/* Top Drawer */}
+      {user && <SideDrawer />}
+
+      {/* Main Chat Section */}
+      <section className="flex flex-1 w-full bg-gray-50">
+        {/* Sidebar (MyChats) */}
+        {user && (
+          <div className="w-full md:w-1/3 lg:w-1/4 border-r border-gray-200 bg-white shadow-sm">
+            <MyChats />
+          </div>
+        )}
+
+        {/* ChatBox */}
+        {user && (
+          <div className="flex-1 bg-white">
+            <ChatBox />
+          </div>
+        )}
       </section>
     </div>
   );
