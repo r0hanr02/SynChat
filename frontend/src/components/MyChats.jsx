@@ -36,7 +36,7 @@ const MyChats = ({ fetchAgain }) => {
     <section
       className={`${
         selectedChat ? "hidden md:flex" : "flex"
-      } flex-col items-center w-full md:w-1/3 py-4  h-full bg-gray-50 border-r border-gray-200`}
+      } flex-col items-center w-full md:w-1/3 py-4 bg-gray-50 border-r border-gray-200`}
     >
       {/* Header */}
       <div className="flex justify-between items-center w-full px-4 pb-3 border-b border-gray-200">
@@ -49,7 +49,7 @@ const MyChats = ({ fetchAgain }) => {
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 w-full overflow-y-auto px-4 py-2">
+      <div className="flex-1 w-full overflow-y-scroll px-4 py-2">
         {chats ? (
           chats.map((chat) => (
             <div

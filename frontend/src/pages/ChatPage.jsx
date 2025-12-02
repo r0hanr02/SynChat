@@ -9,12 +9,12 @@ const ChatPage = () => {
   const [fetchAgain, setFetchAgain] = useState(false);
 
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div className="w-full h-screen flex flex-col overflow-hidden">
       {/* Top Drawer */}
       {user && <SideDrawer />}
 
       {/* Main Chat Section */}
-      <section className="flex w-full h-screen bg-gray-50">
+      <section className="flex w-full flex-1 bg-gray-50 overflow-hidden">
         {/* Sidebar (MyChats) */}
         {user && (
           <MyChats fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />

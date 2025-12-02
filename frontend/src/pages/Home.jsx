@@ -14,7 +14,7 @@ const Home = () => {
   }, [navigate]);
 
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-100 via-white to-indigo-50 p-6">
+    <section className="flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-100 via-white to-indigo-50 p-6">
       {/* Header */}
       <div className="flex flex-col items-center mb-10">
         <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-tight">
