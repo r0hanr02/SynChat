@@ -1,15 +1,20 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { isLastMessage, isSameSender } from "../config/ChatLogics";
 import { useChat } from "../context/chatProvider";
 
 const ScrollableChat = ({ messages }) => {
   const { user } = useChat();
+  const bottomRef = useRef();
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
   return (
     <div className="flex flex-col gap-2 p-4 overflow-y-auto h-full">
       {messages &&
         messages.map((m, i) => (
           <div
+            ref={bottomRef}
             key={m._id}
             className={`flex items-end ${
               m.sender._id === user._id ? "justify-end" : "justify-start"
@@ -29,7 +34,7 @@ const ScrollableChat = ({ messages }) => {
 
             {/* Message bubble */}
             <span
-              className={`px-3 py-2 rounded-lg max-w-xs text-sm shadow-sm
+              className={`px-3 py-2 rounded-lg text-sm shadow-sm
                 ${
                   m.sender._id === user._id
                     ? "bg-indigo-600 text-white"

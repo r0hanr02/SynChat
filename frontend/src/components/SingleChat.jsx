@@ -10,15 +10,24 @@ import { Spinner } from "./ui/spinner";
 import axios from "axios";
 import { showError } from "../service/toast";
 import ScrollableChat from "./ScrollableChat";
+import io from "socket.io-client";
+
+const ENDPOINT = "http://localhost:3000";
+let socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
-  const { user, selectedChat, setSelectedChat } = useChat();
+  const { user, selectedChat, setSelectedChat, notification, setNotification } =
+    useChat();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const sendMessage = async (e) => {
     if ((e.key === "Enter" || e.type === "click") && newMessage) {
+      socket.emit("stop typing", selectedChat._id);
       try {
         const config = {
           headers: {
@@ -32,6 +41,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           config
         );
         setNewMessage("");
+
+        socket.emit("new message", data);
         setMessages([...messages, data]);
       } catch (error) {
         showError("Error Occured!");
@@ -52,6 +63,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       );
       setMessages(data);
       setLoading(false);
+      socket.emit("join chat", selectedChat._id);
     } catch (error) {
       showError("Error Occured!");
       setLoading(false);
@@ -59,8 +71,53 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   };
 
   useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit("setup", user);
+    socket.on("connected", () => {
+      setSocketConnected(true);
+    });
+
+    socket.on("typing", () => setIsTyping(true));
+    socket.on("stop typing", () => setIsTyping(false));
+  }, []);
+
+  useEffect(() => {
     fetchMessages();
+    selectedChatCompare = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    socket.on("message received", (newMessageReceived) => {
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageReceived.chat._id
+      ) {
+        // give  Notification
+      } else {
+        setMessages((prev) => [...prev, newMessageReceived]);
+      }
+    });
+  }, []);
+
+  const typingHandler = (e) => {
+    let typingTimeout;
+    setNewMessage(e.target.value);
+    //
+    if (!socketConnected) return;
+    if (!typing) {
+      setTyping(true);
+      socket.emit("typing", selectedChat._id);
+    }
+
+    if (typingTimeout) clearTimeout(typingTimeout);
+
+    let timerLength = 3000;
+
+    typingTimeout = setTimeout(() => {
+      socket.emit("stop typing", selectedChat._id);
+      setTyping(false);
+    }, timerLength);
+  };
 
   return (
     <>
@@ -122,26 +179,34 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           </div>
 
           {/* Message Input */}
-          <div className="flex items-center gap-2 p-3 border-t border-gray-200 bg-white">
-            <input
-              type="text"
-              onKeyDown={sendMessage}
-              required
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 px-3 py-2 rounded-full border border-gray-300 
-                         focus:outline-none focus:ring-2 focus:ring-indigo-500 
-                         text-gray-800 placeholder-gray-400"
-            />
-            <button
-              onClick={sendMessage}
-              className="flex items-center justify-center p-2 rounded-full 
-                         bg-indigo-600 text-white hover:bg-indigo-700 
-                         transition-colors duration-200"
-            >
-              <IoSendOutline size={22} />
-            </button>
+          <div className="flex flex-col items-center gap-2 p-3 border-t border-gray-200 bg-white">
+            {/* Typing Indicator */}
+            {isTyping && (
+              <span className="self-start text-gray-500 italic">Typing...</span>
+            )}
+
+            {/* Input + Button */}
+            <div className="flex w-full items-center gap-2 flex-1">
+              <input
+                type="text"
+                onKeyDown={sendMessage}
+                required
+                value={newMessage}
+                onChange={typingHandler}
+                placeholder="Type a message..."
+                className="flex-1 px-3 py-2 rounded-full border border-gray-300 
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                 text-gray-800 placeholder-gray-400"
+              />
+              <button
+                onClick={sendMessage}
+                className="flex items-center justify-center p-2 rounded-full 
+                 bg-indigo-600 text-white hover:bg-indigo-700 
+                 transition-colors duration-200"
+              >
+                <IoSendOutline size={22} />
+              </button>
+            </div>
           </div>
         </div>
       ) : (
