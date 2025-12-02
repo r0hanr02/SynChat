@@ -15,7 +15,12 @@ import { Spinner } from "../ui/spinner";
 import UserListItem from "../UserAvatar/UserListItem";
 import { showError, showSuccess } from "../../service/toast";
 
-const UpdateGroupChatModal = ({ children, fetchAgain, setFetchAgain }) => {
+const UpdateGroupChatModal = ({
+  children,
+  fetchAgain,
+  setFetchAgain,
+  fetchMessages,
+}) => {
   const [groupChatName, setGroupChatName] = useState("");
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState([]);
@@ -38,6 +43,7 @@ const UpdateGroupChatModal = ({ children, fetchAgain, setFetchAgain }) => {
       );
       user1._id === user._id ? setSelectedChat() : setSelectedChat(data);
       setFetchAgain(!fetchAgain);
+      fetchMessages();
       setLoading(false);
     } catch (error) {
       showError("Error Occured! Failed to Load Chats");
