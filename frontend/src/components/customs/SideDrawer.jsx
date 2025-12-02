@@ -11,6 +11,8 @@ import axios from "axios";
 import ChatLoading from "../ChatLoading";
 import UserListItem from "../UserAvatar/UserListItem";
 import { Spinner } from "../ui/spinner";
+import { IoIosCloseCircleOutline } from "react-icons/io";
+import { getSender } from "../../config/ChatLogics";
 
 const SideDrawer = () => {
   const [search, setSearch] = useState("");
@@ -19,8 +21,16 @@ const SideDrawer = () => {
   const [loading, setLoading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(null);
   const [openSideDrawer, setOpenSideDrawer] = useState(false);
+  const [notificationPanel, setNotificationPanel] = useState(false);
   const menuRef = useRef(null);
-  const { user, setSelectedChat, chats, setChats } = useChat();
+  const {
+    user,
+    setSelectedChat,
+    chats,
+    setChats,
+    notification,
+    setNotification,
+  } = useChat();
   const navigate = useNavigate();
 
   // console.log(user);
@@ -106,9 +116,61 @@ const SideDrawer = () => {
         <h2 className="text-2xl font-semibold">SynChat</h2>
 
         {/* RIGHT SIDE ICONS */}
-        <div className="flex items-center gap-4">
-          <CiBellOn size={22} className="cursor-pointer" />
-
+        <div className="relative flex items-center gap-4">
+          <button onClick={() => setNotificationPanel((prev) => !prev)}>
+            <CiBellOn size={25} className="cursor-pointer" />
+            {notification.length > 0 && (
+              <span
+                className="absolute top-1 right-13 bg-red-600 text-white text-xs 
+                   rounded-full w-4 h-4 flex items-center justify-center"
+              >
+                {notification.length}
+              </span>
+            )}
+          </button>
+          {notificationPanel && (
+            <div
+              className="absolute right-15 top-8 mt-2 w-64 bg-white border border-gray-200 
+                        rounded-lg shadow-lg p-3 z-50"
+            >
+              <div className=" flex justify-between text-sm font-semibold text-indigo-700 mb-2">
+                <h2>Notifications</h2>
+                <button
+                  className="px-2"
+                  onClick={() => setNotificationPanel((prev) => !prev)}
+                >
+                  <IoIosCloseCircleOutline size={21} />
+                </button>
+              </div>
+              {notification.length > 0 ? (
+                <div>
+                  <ul className="space-y-2">
+                    {notification.map((note, idx) => (
+                      <li
+                        onClick={() => {
+                          setSelectedChat(note.chat);
+                          setNotification((prev) =>
+                            prev.filter((n) => n !== note)
+                          );
+                        }}
+                        key={note._id}
+                        className="px-2 py-1 rounded-md bg-indigo-50 text-gray-800 text-sm pointer-cursor"
+                      >
+                        {note.chat.isGroupChat
+                          ? `New Message In ${note.chat.chatName} `
+                          : `New Message From ${getSender(
+                              user,
+                              note.chat.users
+                            )}`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No notifications</p>
+              )}
+            </div>
+          )}
           {/* PROFILE MENU */}
           <div className="relative" ref={menuRef}>
             <div
