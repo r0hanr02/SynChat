@@ -44,7 +44,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log("Login successful:", formData);
+      // console.log("Login successful:", formData);
       try {
         const config = {
           headers: {
@@ -60,7 +60,7 @@ const Login = () => {
           },
           config
         );
-        console.log(data);
+        // console.log(data);
         showSuccess("Login successfull");
         localStorage.setItem("userInfo", JSON.stringify(data));
         setLoading(false);
