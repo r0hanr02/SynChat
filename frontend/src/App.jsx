@@ -9,7 +9,7 @@ function App() {
   return (
     <>
       <div>
-        <ToastContainer />
+        <ToastContainer draggable position="top-center" />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/chats" element={<ChatPage />} />

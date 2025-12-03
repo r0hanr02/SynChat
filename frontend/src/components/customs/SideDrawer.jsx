@@ -6,7 +6,7 @@ import { useChat } from "../../context/chatProvider";
 import ProfileModal from "./ProfileModal";
 import { useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
-import { showError } from "../../service/toast";
+import { showError, showSuccess } from "../../service/toast";
 import axios from "axios";
 import ChatLoading from "../ChatLoading";
 import UserListItem from "../UserAvatar/UserListItem";
@@ -47,6 +47,7 @@ const SideDrawer = () => {
   const handleLogout = () => {
     localStorage.removeItem("userInfo");
     navigate("/");
+    showSuccess("Logout SuccessFully");
   };
 
   const handleSearch = async () => {

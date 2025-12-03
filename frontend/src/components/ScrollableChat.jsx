@@ -6,6 +6,10 @@ const ScrollableChat = ({ messages }) => {
   const { user } = useChat();
   const bottomRef = useRef();
 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
     <div className="flex flex-col gap-2 p-4 overflow-y-auto h-full">
       {messages &&
@@ -58,7 +62,3 @@ const ScrollableChat = ({ messages }) => {
 };
 
 export default ScrollableChat;
-
-// useEffect(() => {
-//   bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-// }, [messages]);

@@ -8,7 +8,7 @@ import ProfileModal from "./customs/ProfileModal";
 import UpdateGroupChatModal from "./customs/UpdateGroupChatModal";
 import { Spinner } from "./ui/spinner";
 import axios from "axios";
-import { showError } from "../service/toast";
+import { showError, showSuccess } from "../service/toast";
 import ScrollableChat from "./ScrollableChat";
 import io from "socket.io-client";
 
@@ -112,7 +112,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
+  function TemporaryAI() {
+    showSuccess("Chat With AI is Temporary Chat");
+  }
+
   useEffect(() => {
+    TemporaryAI();
     if (!socket.connected) socket.connect();
     socket.emit("setup", user);
     socket.on("connected", () => {
