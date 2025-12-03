@@ -43,7 +43,11 @@ server.listen(port, () => {
 
 const io = new Server(server, {
   pingTimeout: 60000,
-  origin: ["http://localhost:5173", "https://synchat-green.vercel.app"],
+  cors: {
+    origin: ["http://localhost:5173", "https://synchat-green.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
 
 io.on("connection", (socket) => {
