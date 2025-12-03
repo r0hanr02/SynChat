@@ -8,6 +8,7 @@ import chatRouter from "./routes/chat-routes.js";
 import messageRouter from "./routes/message-routes.js";
 import { Server } from "socket.io";
 import http from "http";
+import aiRouter from "./routes/ai-routes.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/message", messageRouter);
+app.use("/api/ai", aiRouter);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -63,6 +65,13 @@ io.on("connection", (socket) => {
       if (user._id === newMessageReceived.sender._id) return;
 
       socket.in(user._id).emit("message received", newMessageReceived);
+    });
+  });
+
+  socket.on("ai-message", ({ room, message }) => {
+    io.to(room).emit("ai-message", {
+      sender: "AI",
+      message: message,
     });
   });
 

@@ -12,8 +12,8 @@ import { showError } from "../service/toast";
 import ScrollableChat from "./ScrollableChat";
 import io from "socket.io-client";
 
-const ENDPOINT = "http://localhost:3000";
-let socket, selectedChatCompare;
+const socket = io("http://localhost:3000", { autoConnect: false });
+let selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const { user, selectedChat, setSelectedChat, notification, setNotification } =
@@ -23,11 +23,52 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [newMessage, setNewMessage] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [aiMessage, setAiMessage] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
   const sendMessage = async (e) => {
-    if ((e.key === "Enter" || e.type === "click") && newMessage) {
+    // Detect Enter OR button click
+    const isSend =
+      (e.key === "Enter" || e.type === "click") && newMessage.trim() !== "";
+
+    // Check for AI prompt
+    if (isSend && newMessage.includes("@ai")) {
+      setAiMessage(true);
+      setNewMessage("");
+      try {
+        const { data } = await axios.get(
+          `${
+            import.meta.env.VITE_APP_URL
+          }/api/ai/get-result?prompt=${newMessage}`
+        );
+
+        const aiMsg = {
+          sender: { _id: "AI", name: "SyncAI" },
+          content: data,
+          chat: selectedChat._id,
+          isAi: true,
+        };
+
+        socket.emit("ai-message", {
+          room: selectedChat._id,
+          message: aiMsg,
+        });
+
+        setMessages((prev) => [...prev, aiMsg]);
+        setAiMessage(false);
+
+        return;
+      } catch (error) {
+        console.log("AI fetch error:", error);
+        setAiMessage(false);
+        return;
+      }
+    }
+
+    // NORMAL USER MESSAGE
+    if (isSend) {
       socket.emit("stop typing", selectedChat._id);
+
       try {
         const config = {
           headers: {
@@ -35,15 +76,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             Authorization: `Bearer ${user.token}`,
           },
         };
+
         const { data } = await axios.post(
           `${import.meta.env.VITE_APP_URL}/api/message`,
           { content: newMessage, chatId: selectedChat._id },
           config
         );
-        setNewMessage("");
 
+        setNewMessage("");
         socket.emit("new message", data);
-        setMessages([...messages, data]);
+        setMessages((prev) => [...prev, data]);
       } catch (error) {
         showError("Error Occured!");
       }
@@ -71,7 +113,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   };
 
   useEffect(() => {
-    socket = io(ENDPOINT);
+    if (!socket.connected) socket.connect();
     socket.emit("setup", user);
     socket.on("connected", () => {
       setSocketConnected(true);
@@ -79,13 +121,19 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
     socket.on("typing", () => setIsTyping(true));
     socket.on("stop typing", () => setIsTyping(false));
+
+    return () => {
+      socket.off("connected");
+      socket.off("typing");
+      socket.off("stop typing");
+    };
   }, []);
 
   useEffect(() => {
     fetchMessages();
     selectedChatCompare = selectedChat;
   }, [selectedChat]);
-  
+
   useEffect(() => {
     socket.on("message received", (newMessageReceived) => {
       if (
@@ -101,13 +149,26 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         setMessages((prev) => [...prev, newMessageReceived]);
       }
     });
+    return () => {
+      socket.off("message received");
+    };
+  }, []);
+
+  useEffect(() => {
+    socket.off("ai-message");
+    const aiHandler = (payload) => {
+      setMessages((prev) => [...prev, payload.message]);
+    };
+    socket.on("ai-message", aiHandler);
+
+    return () => socket.off("ai-message", aiHandler);
   }, []);
 
   const typingHandler = (e) => {
-    let typingTimeout;
     setNewMessage(e.target.value);
-    //
+    let typingTimeout;
     if (!socketConnected) return;
+
     if (!typing) {
       setTyping(true);
       socket.emit("typing", selectedChat._id);
@@ -197,7 +258,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 required
                 value={newMessage}
                 onChange={typingHandler}
-                placeholder="Type a message..."
+                placeholder="Use SyncAI @ai or Type a message..."
                 className="flex-1 px-3 py-2 rounded-full border border-gray-300 
                  focus:outline-none focus:ring-2 focus:ring-indigo-500 
                  text-gray-800 placeholder-gray-400"
