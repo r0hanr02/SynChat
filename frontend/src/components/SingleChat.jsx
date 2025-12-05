@@ -19,7 +19,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const { user, selectedChat, setSelectedChat, notification, setNotification } =
     useChat();
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -35,7 +36,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       setAiMessage(true);
       setNewMessage("");
       try {
-        setLoading(true);
+        setSendingMessage(true);
         const { data } = await axios.get(
           `${
             import.meta.env.VITE_APP_URL
@@ -55,13 +56,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         });
 
         setMessages((prev) => [...prev, aiMsg]);
-        setLoading(false);
-        setAiMessage(false);
+        setSendingMessage(false);
 
         return;
       } catch (error) {
         // console.log("AI fetch error:", error);
-        setAiMessage(false);
+        setSendingMessage(false);
         return;
       }
     }
@@ -71,6 +71,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       socket.emit("stop typing", selectedChat._id);
 
       try {
+        setSendingMessage(true);
+        setNewMessage("");
         const config = {
           headers: {
             "Content-Type": "application/json",
@@ -84,12 +86,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           config
         );
 
-        setNewMessage("");
         socket.emit("new message", data);
         setMessages((prev) => [...prev, data]);
+        setSendingMessage(false);
       } catch (error) {
         showError("Error Occured!");
-        setLoading(false);
+        setSendingMessage(false);
       }
     }
   };
@@ -97,7 +99,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const fetchMessages = async () => {
     if (!selectedChat) return;
     try {
-      setLoading(true);
+      setLoadingMessage(true);
       const config = {
         headers: { Authorization: `Bearer ${user.token}` },
       };
@@ -106,11 +108,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         config
       );
       setMessages(data);
-      setLoading(false);
+      setLoadingMessage(false);
       socket.emit("join chat", selectedChat._id);
     } catch (error) {
       showError("Error Occured!");
-      setLoading(false);
+      setLoadingMessage(false);
     }
   };
 
@@ -241,7 +243,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
           {/* Chat Body */}
           <div className="flex-1 overflow-y-auto bg-gray-50">
-            {loading ? (
+            {loadingMessage ? (
               <div className="flex items-center justify-center h-full">
                 <Spinner className="text-3xl" />
               </div>
@@ -265,22 +267,24 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 required
                 value={newMessage}
                 onChange={typingHandler}
-                disabled={loading}
+                disabled={sendingMessage}
                 placeholder={
-                  loading ? "Sending..." : "Use SyncAI @ai or Type a message..."
+                  sendingMessage
+                    ? "Sending..."
+                    : "Use SyncAI @ai or Type a message..."
                 }
                 className="flex-1 px-3 py-2 rounded-full border border-gray-300 
                  focus:outline-none focus:ring-2 focus:ring-indigo-500 
                  text-gray-800 placeholder-gray-400"
               />
               <button
-                disabled={loading}
+                disabled={sendingMessage}
                 onClick={sendMessage}
                 className="flex items-center justify-center p-2 rounded-full 
                  bg-indigo-600 text-white hover:bg-indigo-700 
                  transition-colors duration-200"
               >
-                {loading ? (
+                {sendingMessage ? (
                   <Spinner className="w-4 h-4" />
                 ) : (
                   <IoSendOutline size={22} />

@@ -9,9 +9,10 @@ import GroupChatModal from "./customs/GroupChatModal";
 const MyChats = ({ fetchAgain }) => {
   const [loggedUser, setLoggedUser] = useState(null);
   const { selectedChat, setSelectedChat, user, chats, setChats } = useChat();
-
+  const [loading, setLoading] = useState(false);
   const fetchChats = async () => {
     try {
+      setLoading(true);
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -22,8 +23,11 @@ const MyChats = ({ fetchAgain }) => {
         config
       );
       setChats(data);
+      // console.log(chats);
+      setLoading(false);
     } catch (error) {
       showError("Error Occured! Failed to Load Chats");
+      setLoading(false);
     }
   };
 

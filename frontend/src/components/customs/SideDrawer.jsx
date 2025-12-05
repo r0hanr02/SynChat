@@ -33,7 +33,6 @@ const SideDrawer = () => {
   } = useChat();
   const navigate = useNavigate();
 
-  // console.log(user);
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -51,10 +50,6 @@ const SideDrawer = () => {
   };
 
   const handleSearch = async () => {
-    if (!search) {
-      showError("Please Enter Name or Email ");
-      return;
-    }
     try {
       setLoading(true);
       const config = {
@@ -67,6 +62,7 @@ const SideDrawer = () => {
         config
       );
       if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
+      // console.log(data);
       setSearchResult(data.users);
       setLoading(false);
     } catch (error) {
@@ -100,7 +96,16 @@ const SideDrawer = () => {
       showError("Error Fetching the Chats");
     }
   };
-
+  useEffect(() => {
+    if (!search.trim()) {
+      setSearchResult([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      handleSearch();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
   return (
     <>
       <div className="flex justify-between items-center px-3 py-2 border-b shadow-sm relative bg-white">
@@ -245,23 +250,18 @@ const SideDrawer = () => {
                    border border-indigo-300 placeholder-indigo-400 
                    focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
-            <button
-              onClick={handleSearch}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium 
-                   hover:bg-indigo-700 transition-colors duration-200"
-            >
-              GO
-            </button>
           </div>
 
           {/* Users Section */}
-          <p className="text-lg font-medium underline mb-2">Users</p>
+          <p className="text-lg font-medium text-center underline mb-2">
+            Users
+          </p>
 
           <div className="flex-1 overflow-y-auto space-y-2">
             {loading ? (
               <ChatLoading />
             ) : (
-              searchResult?.map((user) => (
+              searchResult.map((user) => (
                 <UserListItem
                   key={user._id}
                   user={user}
@@ -269,6 +269,7 @@ const SideDrawer = () => {
                 />
               ))
             )}
+
             {loadingChat && (
               <div className="flex justify-center py-4">
                 <Spinner />

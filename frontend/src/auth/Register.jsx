@@ -14,42 +14,38 @@ const Register = () => {
   });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [errors, setErrors] = useState({});
 
   const imageUpload = async (pic) => {
+    if (!pic) {
+      showError("Please select an image");
+      return;
+    }
+    if (pic.type !== "image/jpeg" && pic.type !== "image/png") {
+      showError("Invalid file type. Only JPG/PNG allowed.");
+      return;
+    }
+
     try {
-      setLoading(true);
+      setUploading(true);
+      const data = new FormData();
+      data.append("file", pic);
+      data.append("upload_preset", "SynChat");
+      data.append("cloud_name", "dpit8gehd");
 
-      if (!pic) {
-        showError("Please select an image");
-        setLoading(false);
-        return;
-      }
-
-      if (pic.type === "image/jpeg" || pic.type === "image/png") {
-        const data = new FormData();
-        data.append("file", pic);
-        data.append("upload_preset", "SynChat");
-        data.append("cloud_name", "dpit8gehd");
-
-        const res = await axios.post(
-          "https://api.cloudinary.com/v1_1/dpit8gehd/image/upload",
-          data
-        );
-
-        const uploadedImage = res.data.secure_url;
-        setFormData((prev) => ({ ...prev, pic: uploadedImage }));
-        setLoading(false);
-        showSuccess("Profile Photo Uploaded");
-      } else {
-        showError("Invalid file type. Only JPG/PNG allowed.");
-        setLoading(false);
-      }
+      const res = await axios.post(
+        "https://api.cloudinary.com/v1_1/dpit8gehd/image/upload",
+        data
+      );
+      const uploadedImage = res.data.secure_url;
+      setFormData((prev) => ({ ...prev, pic: uploadedImage }));
+      showSuccess("Profile Photo Uploaded");
     } catch (err) {
       showError("Image upload failed");
-      console.log(err);
-      setLoading(false);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -116,9 +112,11 @@ const Register = () => {
         showSuccess("Registration successfull");
         localStorage.setItem("userInfo", JSON.stringify(data));
         setLoading(false);
-        navigate("/chats");
+
+        setTimeout(() => {
+          navigate("/chats");
+        }, 300);
       } catch (error) {
-        // console.log(error);
         showError(error.response?.data?.message);
         setLoading(false);
       }
@@ -248,11 +246,11 @@ const Register = () => {
 
         {/* Submit Button */}
         <Button
-          disabled={loading}
+          disabled={loading || uploading}
           type="submit"
           className="w-full mt-4 bg-indigo-600 text-white rounded-lg py-2 font-semibold hover:bg-indigo-700 transition-all duration-300"
         >
-          {loading ? "Loading..." : "SignIn"}
+          {loading ? "Loading..." : uploading ? " Uploading Image" : "SignIn"}
         </Button>
       </form>
 
