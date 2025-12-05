@@ -63,9 +63,10 @@ const Login = () => {
         showSuccess("Login successfull");
         localStorage.setItem("userInfo", JSON.stringify(data));
         setLoading(false);
-        navigate("/chats");
+        setTimeout(() => {
+          navigate("/chats");
+        }, 300);
       } catch (error) {
-        // console.log(error);
         showError("Login Failed");
         setLoading(false);
       }
