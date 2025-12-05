@@ -96,6 +96,7 @@ const Register = () => {
     e.preventDefault();
     if (validate()) {
       try {
+        setLoading(true);
         const config = {
           headers: {
             "Content-type": "application/json",
@@ -117,7 +118,9 @@ const Register = () => {
         setLoading(false);
         navigate("/chats");
       } catch (error) {
-        console.log(error);
+        // console.log(error);
+        showError(error.response?.data?.message);
+        setLoading(false);
       }
     }
   };
@@ -245,10 +248,11 @@ const Register = () => {
 
         {/* Submit Button */}
         <Button
+          disabled={loading}
           type="submit"
           className="w-full mt-4 bg-indigo-600 text-white rounded-lg py-2 font-semibold hover:bg-indigo-700 transition-all duration-300"
         >
-          Sign Up
+          {loading ? "Loading..." : "SignIn"}
         </Button>
       </form>
 

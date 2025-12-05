@@ -30,6 +30,7 @@ const GroupChatModal = ({ children }) => {
     if (!query) return;
 
     try {
+      setLoading(true);
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -43,6 +44,7 @@ const GroupChatModal = ({ children }) => {
       setLoading(false);
     } catch (error) {
       showError("Error Occured! Failed to Load Chats");
+      setLoading(false);
     }
   };
 
@@ -52,6 +54,7 @@ const GroupChatModal = ({ children }) => {
       return;
     }
     try {
+      setLoading(true);
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -67,6 +70,7 @@ const GroupChatModal = ({ children }) => {
       );
       setChats([data, ...chats]);
       showSuccess("New Group Chat Created");
+      setLoading(false);
       setGroupChatName("");
       setSelectedUsers([]);
       setOpen(false);
@@ -99,60 +103,61 @@ const GroupChatModal = ({ children }) => {
           <DialogTitle className="text-center text-xl font-semibold text-gray-800">
             Create Group Chat
           </DialogTitle>
-          <DialogDescription>
-            <div className="flex flex-col gap-4 mt-4">
-              {/* Form */}
-              <form className="flex flex-col gap-3">
-                <input
-                  type="text"
-                  placeholder="Chat Name"
-                  value={groupChatName}
-                  onChange={(e) => setGroupChatName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 
-                             focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900"
-                />
-                <input
-                  type="text"
-                  value={search}
-                  placeholder="Add User e.g. Rohan, Philips"
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 
-                             focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900"
-                />
-              </form>
-
-              {/* Selected Users */}
-              <div className="flex flex-wrap gap-2">
-                {selectedUsers.map((u) => (
-                  <UserBadgeItem
-                    key={u._id}
-                    user={u}
-                    handleFunction={() => handleDelete(u)}
-                  />
-                ))}
-              </div>
-
-              {/* Search Results */}
-              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                {loading ? (
-                  <div className="flex justify-center py-4">
-                    <Spinner />
-                  </div>
-                ) : (
-                  searchResult
-                    ?.slice(0, 4)
-                    .map((user) => (
-                      <UserListItem
-                        key={user._id}
-                        user={user}
-                        handleFunction={() => handleGroup(user)}
-                      />
-                    ))
-                )}
-              </div>
-            </div>
-          </DialogDescription>
+          <DialogDescription></DialogDescription>
         </DialogHeader>
+
+        <div className="flex flex-col gap-4 mt-4">
+          {/* Form */}
+          <form className="flex flex-col gap-3">
+            <input
+              type="text"
+              placeholder="Chat Name"
+              value={groupChatName}
+              onChange={(e) => setGroupChatName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900"
+            />
+            <input
+              type="text"
+              value={search}
+              placeholder="Add User e.g. Rohan, Philips"
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 
+                             focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900"
+            />
+          </form>
+
+          {/* Selected Users */}
+          <div className="flex flex-wrap gap-2">
+            {selectedUsers.map((u) => (
+              <UserBadgeItem
+                key={u._id}
+                user={u}
+                handleFunction={() => handleDelete(u)}
+              />
+            ))}
+          </div>
+
+          {/* Search Results */}
+          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <Spinner />
+              </div>
+            ) : (
+              searchResult
+                ?.slice(0, 4)
+                .map((user) => (
+                  <UserListItem
+                    key={user._id}
+                    user={user}
+                    handleFunction={() => handleGroup(user)}
+                  />
+                ))
+            )}
+          </div>
+        </div>
+
         <DialogFooter>
           <button
             onClick={handleSubmit}

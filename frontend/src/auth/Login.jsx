@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../components/ui/button";
 import axios from "axios";
-import { showSuccess } from "../service/toast";
+import { showError, showSuccess } from "../service/toast";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -44,8 +44,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      // console.log("Login successful:", formData);
       try {
+        setLoading(true);
         const config = {
           headers: {
             "Content-type": "application/json",
@@ -60,13 +60,14 @@ const Login = () => {
           },
           config
         );
-        // console.log(data);
         showSuccess("Login successfull");
         localStorage.setItem("userInfo", JSON.stringify(data));
         setLoading(false);
         navigate("/chats");
       } catch (error) {
-        console.log(error);
+        // console.log(error);
+        showError("Login Failed");
+        setLoading(false);
       }
     }
   };
@@ -119,6 +120,7 @@ const Login = () => {
             />
             <button
               type="button"
+              disabled={loading}
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2 text-gray-500 hover:text-indigo-600 focus:outline-none"
             >
@@ -133,9 +135,10 @@ const Login = () => {
         {/* Submit Button */}
         <Button
           type="submit"
+          disabled={loading}
           className="w-full mt-4 bg-indigo-600 text-white rounded-lg py-2 font-semibold hover:bg-indigo-700 transition-all duration-300"
         >
-          Login
+          {loading ? "loading" : "Login"}
         </Button>
       </form>
 

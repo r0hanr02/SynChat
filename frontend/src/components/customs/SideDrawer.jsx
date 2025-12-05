@@ -71,7 +71,8 @@ const SideDrawer = () => {
       setLoading(false);
     } catch (error) {
       showError("failed to load the search Result");
-      console.log(error);
+      setLoading(false);
+      // console.log(error);
     } finally {
       setLoading(false);
     }

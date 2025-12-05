@@ -27,7 +27,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [isTyping, setIsTyping] = useState(false);
 
   const sendMessage = async (e) => {
-    // Detect Enter OR button click
     const isSend =
       (e.key === "Enter" || e.type === "click") && newMessage.trim() !== "";
 
@@ -36,6 +35,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       setAiMessage(true);
       setNewMessage("");
       try {
+        setLoading(true);
         const { data } = await axios.get(
           `${
             import.meta.env.VITE_APP_URL
@@ -55,11 +55,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         });
 
         setMessages((prev) => [...prev, aiMsg]);
+        setLoading(false);
         setAiMessage(false);
 
         return;
       } catch (error) {
-        console.log("AI fetch error:", error);
+        // console.log("AI fetch error:", error);
         setAiMessage(false);
         return;
       }
@@ -88,6 +89,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         setMessages((prev) => [...prev, data]);
       } catch (error) {
         showError("Error Occured!");
+        setLoading(false);
       }
     }
   };
@@ -263,18 +265,26 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 required
                 value={newMessage}
                 onChange={typingHandler}
-                placeholder="Use SyncAI @ai or Type a message..."
+                disabled={loading}
+                placeholder={
+                  loading ? "Sending..." : "Use SyncAI @ai or Type a message..."
+                }
                 className="flex-1 px-3 py-2 rounded-full border border-gray-300 
                  focus:outline-none focus:ring-2 focus:ring-indigo-500 
                  text-gray-800 placeholder-gray-400"
               />
               <button
+                disabled={loading}
                 onClick={sendMessage}
                 className="flex items-center justify-center p-2 rounded-full 
                  bg-indigo-600 text-white hover:bg-indigo-700 
                  transition-colors duration-200"
               >
-                <IoSendOutline size={22} />
+                {loading ? (
+                  <Spinner className="w-4 h-4" />
+                ) : (
+                  <IoSendOutline size={22} />
+                )}
               </button>
             </div>
           </div>
