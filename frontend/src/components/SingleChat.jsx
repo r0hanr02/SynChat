@@ -54,13 +54,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           room: selectedChat._id,
           message: aiMsg,
         });
-
-        setMessages((prev) => [...prev, aiMsg]);
         setSendingMessage(false);
 
         return;
       } catch (error) {
-        // console.log("AI fetch error:", error);
         setSendingMessage(false);
         return;
       }
